@@ -8,14 +8,14 @@ const int OUT2 = 3;
 const int OUT3 = 4;
 const int OUT4 = 5;
 
-const int SPEED = 80;
+const int SPEED = 70;
 
-const int DEGREE_90_DELAY = 700;
+const int DEGREE_90_DELAY = 800;
 const int MIN_DISTANCE_LIMIT = 10;
 const int MAX_DISTANCE_LIMIT = 30;
 
 int distances[11];
-int obstaleDistanceCounter = 0;
+int obstacleDistanceCounter = 0;
 int distance = 0;
 
 Servo servo;
@@ -34,18 +34,24 @@ void setup() {
 
 void loop()
 {
+
+  //Check if obstacle is detected
   distance = checkDistance();
   if ( distance < 30) {
-    obstaleDistanceCounter++;
+    obstacleDistanceCounter++;
   } else {
-    obstaleDistanceCounter = 0;
+    obstacleDistanceCounter = 0;
   }
-  if (obstaleDistanceCounter > 2) {
-    obstaleDistanceCounter = 0;
+
+  if (obstacleDistanceCounter > 2) {
+    obstacleDistanceCounter = 0;
     stop();
+
+    //Get surrounding distance datas
     readDistances();
     int maxPosition = getMaxDistancePosition();
-    if (isRunAwayNeeded(maxPosition)) {
+    
+    if (isTurnAroundNeeded(maxPosition)) {
       turnAround();
     } else {
       int turnDegree = degreeNeededToTurn(maxPosition);
@@ -56,9 +62,14 @@ void loop()
       }
     }
   }
+  
   forward();
   delay(100);
 }
+
+/////////////////////////////////////////////////////////////////
+//------------------------DISTANCE PROCESSING------------------//
+/////////////////////////////////////////////////////////////////
 
 /**
    Turns the servo from 15° to 165° in 15° steps and reads the
@@ -95,6 +106,17 @@ int checkDistance() {
   return calculatedDistance;
 }
 
+/////////////////////////////////////////////////////////////////
+//----------------------------CALCULATIONS---------------------//
+/////////////////////////////////////////////////////////////////
+
+/**
+  Calculates the time needed to turn the given degree
+*/
+int countDegreeDelay(int degree) {
+  return (DEGREE_90_DELAY / 90 * degree);
+}
+
 /**
    Searches the max value in the distances array, and gives
    back the position of the greatest one.
@@ -109,18 +131,31 @@ int getMaxDistancePosition() {
   return max;
 }
 
-boolean isRunAwayNeeded(int pos) {
+/**
+  Gives back if total turnaround needed
+*/
+boolean isTurnAroundNeeded(int pos) {
   return distances[pos] < 50;
 }
 
+/**
+   Gives back if the tank needs to turn left or right
+*/
 boolean isLeftTurnNeeded(int pos) {
   return pos < 5;
 }
 
+/**
+   Gives back the degree needed to turn the tank
+*/
 int degreeNeededToTurn(int pos) {
   pos -= 5;
   return (15 * abs(pos));
 }
+
+/////////////////////////////////////////////////////////////////
+//----------------------------MOTOR CONTROL--------------------//
+/////////////////////////////////////////////////////////////////
 
 /**
    Sets the motor directions to turn the tank right.
@@ -165,8 +200,8 @@ void rightForward() {
    Spins the right motor backward
 */
 void rightBackward() {
-  analogWrite(OUT2, SPEED);
   analogWrite(OUT1, LOW);
+  analogWrite(OUT2, SPEED);
 }
 
 /**
@@ -181,8 +216,8 @@ void leftForward() {
    Spins the left motor backward
 */
 void leftBackward() {
-  analogWrite(OUT4, SPEED);
   analogWrite(OUT3, LOW);
+  analogWrite(OUT4, SPEED);
 }
 
 /**
@@ -210,11 +245,4 @@ void stop() {
   digitalWrite(OUT3, LOW);
   digitalWrite(OUT4, LOW);
 
-}
-
-/**
-  Calculates the time needed to turn the given degree
-*/
-int countDegreeDelay(int degree) {
-  return (DEGREE_90_DELAY / 90 * degree);
 }
